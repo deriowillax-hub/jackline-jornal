@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a1a2e">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/launchericon-96x96.png" type="image/png">
+<link rel="apple-touch-icon" href="/launchericon-192x192.png">
+<title>Journify</title>
+<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Caveat:wght@400;600;700&family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --ink:#1a1a2e; --paper:#f5f0e8; --paper-dark:#ede8d8; --paper-mid:#f0ead8;
+  --cash:#2d6a4f; --cash-light:#b7e4c7; --cash-pale:#d8f3dc;
+  --vis:#1d3557; --vis-light:#a8dadc; --vis-pale:#caf0f8;
+  --stab:#9b2226; --stab-light:#ffb4a2; --stab-pale:#ffe5d9;
+  --gold:#e9c46a; --gold-dark:#c9a227; --night:#0d1b2a; --rule:#c8b89a; --bg:#1c1c1c;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;}
+body{font-family:'Caveat',cursive;background:var(--bg);min-height:100vh;
+  background-image:radial-gradient(ellipse at 10% 0%,rgba(45,106,79,.12) 0%,transparent 60%),
+  radial-gradient(ellipse at 90% 100%,rgba(29,53,87,.12) 0%,transparent 60%);}
+
+/* ── AUTH SCREEN ── */
+#authScreen{position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;padding:40px 28px;background:var(--bg);}
+.ab{position:fixed;border-radius:50%;pointer-events:none;z-index:999;}
+.ab1{top:-100px;left:-80px;width:300px;height:300px;background:radial-gradient(circle,rgba(45,106,79,.3),transparent 70%);}
+.ab2{bottom:-60px;right:-60px;width:250px;height:250px;background:radial-gradient(circle,rgba(29,53,87,.25),transparent 70%);}
+
+/* splash */
+.splash{width:100%;max-width:400px;display:flex;flex-direction:column;align-items:center;}
+.s-logo{font-family:'Bebas Neue',sans-serif;font-size:72px;letter-spacing:6px;color:var(--gold);
+  line-height:1;margin-bottom:4px;text-shadow:0 0 40px rgba(233,196,106,.3);}
+.s-sub{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:4px;text-transform:uppercase;
+  color:rgba(255,255,255,.35);margin-bottom:44px;}
+.s-book{width:110px;height:130px;position:relative;margin-bottom:44px;}
+.s-book-body{width:100%;height:100%;background:var(--paper);border-radius:4px 8px 8px 4px;
+  box-shadow:4px 4px 0 var(--gold-dark),0 20px 40px rgba(0,0,0,.5);position:relative;overflow:hidden;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;}
+.s-book-body::before{content:'';position:absolute;inset:0;
+  background-image:repeating-linear-gradient(transparent,transparent 15px,rgba(200,184,154,.4) 15px,rgba(200,184,154,.4) 16px);
+  background-position:0 24px;}
+.s-book-line{width:60%;height:2px;background:rgba(26,26,46,.15);border-radius:2px;position:relative;z-index:1;}
+.s-book-spiral{position:absolute;left:-6px;top:0;bottom:0;width:12px;
+  display:flex;flex-direction:column;justify-content:space-evenly;align-items:center;}
+.s-ring{width:10px;height:10px;border-radius:50%;background:linear-gradient(145deg,#999,#555);border:1px solid #444;}
+.s-tagline{font-family:'Permanent Marker',cursive;font-size:18px;color:rgba(255,255,255,.7);
+  text-align:center;margin-bottom:44px;line-height:1.4;}
+.s-actions{width:100%;display:flex;flex-direction:column;gap:12px;}
+.btn-start{width:100%;padding:16px;background:linear-gradient(135deg,var(--gold-dark),var(--gold));
+  border:none;border-radius:6px;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;
+  color:var(--ink);cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.4),0 8px 32px rgba(233,196,106,.3);
+  transition:transform .1s,box-shadow .1s;}
+.btn-start:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.4);}
+.btn-login-link{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:1px;
+  color:rgba(255,255,255,.4);text-align:center;cursor:pointer;padding:8px;}
+.btn-login-link span{color:var(--gold);text-decoration:underline;}
+
+/* form views */
+.fview{width:100%;max-width:400px;display:none;flex-direction:column;}
+.fview.active{display:flex;}
+.fback{display:flex;align-items:center;gap:8px;font-family:'Space Mono',monospace;font-size:11px;
+  letter-spacing:1px;color:var(--gold);cursor:pointer;margin-bottom:32px;width:fit-content;}
+.ftitle{font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:4px;color:#fff;line-height:1;margin-bottom:4px;}
+.fsub{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;
+  color:rgba(255,255,255,.3);text-transform:uppercase;margin-bottom:36px;}
+.ffield{margin-bottom:22px;}
+.flabel{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;
+  color:rgba(255,255,255,.35);display:block;margin-bottom:8px;}
+.finput{width:100%;background:transparent;border:none;border-bottom:1.5px solid rgba(255,255,255,.15);
+  padding:10px 0 8px;font-family:'Caveat',cursive;font-size:20px;color:#fff;outline:none;
+  caret-color:var(--gold);transition:border-color .2s;}
+.finput:focus{border-bottom-color:var(--gold);}
+.finput::placeholder{color:rgba(255,255,255,.2);font-size:17px;}
+.fbtn{width:100%;padding:15px;background:var(--ink);border:2px solid var(--gold);border-radius:6px;
+  font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:var(--gold);
+  cursor:pointer;box-shadow:3px 3px 0 var(--gold-dark);transition:all .15s;margin-top:8px;}
+.fbtn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--gold-dark);}
+.fbtn:disabled{opacity:.5;pointer-events:none;}
+.ferr{background:rgba(155,34,38,.15);border:1px solid rgba(155,34,38,.3);color:#ffb4a2;
+  font-family:'Space Mono',monospace;font-size:11px;padding:10px 14px;border-radius:4px;
+  margin-bottom:14px;display:none;line-height:1.4;}
+.ferr.show{display:block;}
+.fswitch{text-align:center;font-family:'Space Mono',monospace;font-size:11px;
+  color:rgba(255,255,255,.35);margin-top:18px;cursor:pointer;}
+.fswitch span{color:var(--gold);text-decoration:underline;}
+
+/* ── APP SHELL ── */
+#appShell{display:none;}
+#appShell.active{display:block;}
+
+/* NAV */
+.app-nav{position:sticky;top:0;z-index:50;background:rgba(28,28,28,.95);
+  backdrop-filter:blur(12px);border-bottom:1px solid rgba(233,196,106,.15);
+  padding:0 16px;display:flex;align-items:center;justify-content:space-between;}
+.nav-left{display:flex;}
+.nbtn{padding:14px 12px;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;
+  text-transform:uppercase;color:rgba(255,255,255,.4);cursor:pointer;
+  border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;}
+.nbtn.active{color:var(--gold);border-bottom-color:var(--gold);}
+.nav-right{display:flex;align-items:center;gap:10px;}
+.nav-user{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;color:rgba(255,255,255,.3);}
+.nav-so{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;
+  color:rgba(255,255,255,.3);cursor:pointer;padding:5px 9px;
+  border:1px solid rgba(255,255,255,.1);border-radius:4px;transition:all .15s;}
+.nav-so:hover{color:#ffb4a2;border-color:rgba(155,34,38,.3);}
+
+/* VIEWS */
+.vw{display:none;} .vw.active{display:block;}
+
+/* ── NOTEBOOK ── */
+.nbwrap{padding:24px 16px 100px;}
+.nb{max-width:960px;margin:0 auto;}
+.spiral{display:flex;justify-content:space-around;padding:0 44px;margin-bottom:-6px;position:relative;z-index:10;}
+.sring{width:26px;height:26px;border-radius:50%;background:linear-gradient(145deg,#999,#555);
+  border:3px solid #3a3a3a;box-shadow:0 2px 6px rgba(0,0,0,.6),inset 0 1px 3px rgba(255,255,255,.2);}
+.page{background:var(--paper);border-radius:3px 3px 8px 8px;
+  box-shadow:0 20px 60px rgba(0,0,0,.45),inset 0 0 0 1px rgba(200,184,154,.3);
+  position:relative;overflow:hidden;margin-bottom:40px;}
+.page::before{content:'';position:absolute;inset:0;
+  background-image:repeating-linear-gradient(transparent,transparent 31px,var(--rule) 31px,var(--rule) 32px);
+  background-position:0 52px;opacity:.35;pointer-events:none;}
+.page::after{content:'';position:absolute;left:72px;top:0;bottom:0;width:2px;
+  background:rgba(200,80,80,.2);pointer-events:none;}
+.holes{position:absolute;left:0;top:0;bottom:0;width:72px;
+  display:flex;flex-direction:column;justify-content:space-evenly;align-items:center;padding:60px 0;}
+.hole{width:18px;height:18px;border-radius:50%;background:#1c1c1c;
+  box-shadow:inset 0 2px 5px rgba(0,0,0,.9),0 1px 2px rgba(255,255,255,.08);flex-shrink:0;margin:14px 0;}
+.pc{padding:32px 40px 48px 92px;position:relative;}
+.ptabs{display:flex;gap:4px;padding:0 92px;margin-bottom:-2px;position:relative;z-index:5;}
+.ptab{padding:7px 16px;background:#2e2e2e;border:2px solid #444;border-bottom:none;
+  border-radius:6px 6px 0 0;font-family:'Space Mono',monospace;font-size:9px;
+  letter-spacing:2px;text-transform:uppercase;color:#888;cursor:pointer;transition:all .2s;user-select:none;}
+.ptab.active{background:var(--paper);border-color:var(--ink);color:var(--ink);font-weight:700;}
+.pband{display:flex;align-items:center;justify-content:space-between;
+  padding:16px 40px 14px 92px;border-bottom:2px solid rgba(26,26,46,.12);flex-wrap:wrap;gap:8px;}
+.btitle{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:3px;color:var(--ink);}
+.bsub{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--ink);opacity:.45;text-transform:uppercase;}
+.bdate{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--ink);opacity:.5;}
+.sh{font-family:'Permanent Marker',cursive;font-size:22px;color:var(--ink);
+  margin-bottom:16px;display:flex;align-items:center;gap:12px;}
+.sh::after{content:'';flex:1;height:2px;background:linear-gradient(90deg,var(--ink),transparent);opacity:.2;border-radius:2px;}
+.sh .chip{background:var(--ink);color:var(--paper);font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;padding:3px 8px;border-radius:2px;}
+.sh-n{font-family:'Permanent Marker',cursive;font-size:22px;color:var(--gold);
+  margin-bottom:16px;display:flex;align-items:center;gap:12px;}
+.sh-n::after{content:'';flex:1;height:2px;background:linear-gradient(90deg,var(--gold),transparent);opacity:.3;border-radius:2px;}
+.sh-n .chip{background:var(--gold);color:var(--night);font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;padding:3px 8px;border-radius:2px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+.g31{display:grid;grid-template-columns:2fr 1fr;gap:16px;}
+.box{border:2px solid var(--ink);border-radius:6px;padding:16px 18px;
+  background:var(--paper-dark);box-shadow:3px 3px 0 rgba(26,26,46,.15);}
+.box.cp{background:var(--cash-pale);}
+.box.vp{background:var(--vis-pale);}
+.box.sp{background:var(--stab-pale);}
+.box.gp{background:#fef9e7;border-color:var(--gold-dark);box-shadow:3px 3px 0 var(--gold-dark);}
+.box.dk{background:var(--ink);border-color:var(--ink);}
+.box.nk{background:var(--night);border-color:#334;}
+.bt{font-family:'Permanent Marker',cursive;font-size:15px;color:var(--ink);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.bt.w{color:#fff;}
+.fi{width:100%;background:transparent;border:none;border-bottom:1.5px dashed rgba(26,26,46,.3);
+  padding:5px 3px;font-family:'Caveat',cursive;font-size:16px;color:var(--ink);outline:none;margin-bottom:5px;resize:none;}
+.fi::placeholder{color:rgba(26,26,46,.2);font-size:14px;}
+.fi:focus{border-bottom-color:var(--cash);}
+.fi.w{color:rgba(255,255,255,.8);border-bottom-color:rgba(255,255,255,.12);}
+.fi.w::placeholder{color:rgba(255,255,255,.18);}
+.fi.w:focus{border-bottom-color:var(--gold);}
+textarea.fi{min-height:56px;line-height:1.5;border:1.5px dashed rgba(26,26,46,.18);border-radius:4px;padding:7px;}
+textarea.fi.w{border-color:rgba(255,255,255,.1);}
+.fl{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--ink);opacity:.4;margin-bottom:3px;display:block;}
+.fl.w{color:rgba(255,255,255,.3);}
+.cl{list-style:none;}
+.cl li{display:flex;align-items:flex-start;gap:10px;padding:6px 0;
+  border-bottom:1px dashed rgba(26,26,46,.15);font-family:'Caveat',cursive;font-size:15px;
+  color:var(--ink);cursor:pointer;user-select:none;transition:opacity .2s;}
+.cl li:last-child{border-bottom:none;}
+.cl li.done{opacity:.4;text-decoration:line-through;}
+.cl.nk li{color:rgba(255,255,255,.6);border-color:rgba(255,255,255,.08);font-size:14px;}
+.ck{width:17px;height:17px;border:2px solid var(--ink);border-radius:3px;flex-shrink:0;margin-top:2px;
+  display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .15s;}
+.ck.done{background:var(--cash);border-color:var(--cash);color:#fff;}
+.ck.done::after{content:'✓';}
+.ck.nc{border-color:rgba(255,255,255,.3);}
+.ck.nc.done{background:var(--gold);border-color:var(--gold);color:var(--night);}
+.nnrow{display:flex;flex-direction:column;gap:5px;margin:8px 0;}
+.nni{display:flex;align-items:center;gap:10px;padding:8px 11px;border-radius:4px;
+  border:1.5px solid rgba(26,26,46,.15);background:var(--paper-mid);font-family:'Caveat',cursive;
+  font-size:15px;color:var(--ink);cursor:pointer;user-select:none;transition:background .15s;}
+.nni.done{opacity:.4;text-decoration:line-through;}
+.nck{width:19px;height:19px;border:2px solid var(--ink);border-radius:4px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:12px;}
+.nck.done{background:var(--cash);border-color:var(--cash);color:#fff;}
+.nck.done::after{content:'✓';}
+.sched{display:flex;flex-direction:column;gap:5px;}
+.si{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:5px;border:1.5px solid rgba(26,26,46,.12);}
+.st{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--ink);opacity:.5;min-width:80px;flex-shrink:0;}
+.sd{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.sl{font-family:'Caveat',cursive;font-size:15px;color:var(--ink);flex:1;}
+.sg{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:1px;padding:2px 7px;border-radius:99px;text-transform:uppercase;flex-shrink:0;}
+.sc{background:var(--cash-pale);} .sc .sd{background:var(--cash);} .sc .sg{background:var(--cash-light);color:var(--cash);}
+.sv{background:var(--vis-pale);} .sv .sd{background:var(--vis);} .sv .sg{background:var(--vis-light);color:var(--vis);}
+.ss{background:var(--stab-pale);} .ss .sd{background:var(--stab);} .ss .sg{background:var(--stab-light);color:var(--stab);}
+.sbr{background:#f9f7f1;} .sbr .sd{background:#bbb;} .sbr .sg{background:#e8e4d8;color:#666;}
+.sni{background:#eef2f7;} .sni .sd{background:var(--night);} .sni .sg{background:#ccd6e8;color:var(--night);}
+.pbadge{display:flex;align-items:center;gap:6px;padding:6px 11px;border:2px solid var(--ink);border-radius:4px;
+  font-family:'Permanent Marker',cursive;font-size:12px;color:var(--ink);box-shadow:2px 2px 0 var(--ink);}
+.pbadge.c{background:var(--cash-pale);} .pbadge.v{background:var(--vis-pale);} .pbadge.s{background:var(--stab-pale);}
+.erow{display:flex;flex-direction:column;gap:5px;}
+.ei{display:flex;align-items:center;gap:8px;font-family:'Caveat',cursive;font-size:14px;color:var(--ink);}
+.ed{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.nsect{background:var(--night);border-radius:0 0 8px 8px;padding:26px 40px 34px 92px;position:relative;}
+.nsect::before{content:'🌙';position:absolute;right:36px;top:22px;font-size:44px;opacity:.08;}
+.wgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;margin:14px 0;}
+.wd{border:2px solid var(--ink);border-radius:5px;padding:9px 7px;text-align:center;
+  background:var(--paper-dark);box-shadow:2px 2px 0 rgba(26,26,46,.12);}
+.wd.sp2{background:var(--cash-pale);} .wd.rst{background:var(--stab-pale);}
+.wdn{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1px;text-transform:uppercase;color:var(--ink);opacity:.5;margin-bottom:4px;}
+.wdt{font-family:'Permanent Marker',cursive;font-size:10px;color:var(--ink);line-height:1.3;}
+.wdi{font-size:17px;margin-bottom:3px;display:block;}
+.stbl{width:100%;border-collapse:collapse;}
+.stbl th{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;
+  opacity:.5;padding:7px 9px;text-align:left;border-bottom:2px solid rgba(26,26,46,.15);color:var(--ink);}
+.stbl td{font-family:'Caveat',cursive;font-size:14px;padding:5px 9px;color:var(--ink);border-bottom:1px dashed rgba(26,26,46,.1);}
+.stbl input{width:75px;background:transparent;border:none;border-bottom:1.5px dashed rgba(26,26,46,.25);
+  font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--ink);outline:none;text-align:right;padding:2px 0;}
+.rc td{background:rgba(183,228,199,.25);} .rv td{background:rgba(168,218,220,.25);} .rs td{background:rgba(255,180,162,.25);}
+.skrow{display:flex;flex-direction:column;gap:4px;}
+.ski{display:flex;align-items:center;gap:8px;font-family:'Caveat',cursive;font-size:14px;color:var(--ink);}
+.skx{color:var(--stab);font-size:17px;font-weight:700;}
+.cmix{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;}
+.cc{background:var(--vis-pale);border:1.5px solid var(--vis);border-radius:99px;padding:3px 11px;
+  font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1px;color:var(--vis);}
+.mscg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.msc{border:2px solid var(--ink);border-radius:6px;padding:12px 10px;text-align:center;box-shadow:2px 2px 0 rgba(26,26,46,.12);}
+.msi{font-size:20px;display:block;margin-bottom:3px;}
+.msl{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--ink);opacity:.5;margin-bottom:5px;}
+.msc input{width:48px;background:transparent;border:none;border-bottom:1.5px dashed rgba(26,26,46,.3);
+  font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--ink);outline:none;text-align:center;}
+.ibox{border:2.5px solid var(--ink);border-radius:6px;padding:14px 18px;background:var(--gold);box-shadow:4px 4px 0 var(--ink);}
+.ibox .il{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:3px;text-transform:uppercase;opacity:.5;color:var(--ink);margin-bottom:7px;display:block;}
+.pnum{position:absolute;bottom:12px;right:24px;font-family:'Space Mono',monospace;font-size:9px;color:var(--ink);opacity:.22;letter-spacing:2px;}
+.psec{display:none;} .psec.active{display:block;}
+
+/* ── THOUGHTS PAGE ── */
+.twrap{padding:24px 16px 100px;max-width:700px;margin:0 auto;}
+.th-hdr{margin-bottom:26px;}
+.th-title{font-family:'Bebas Neue',sans-serif;font-size:48px;letter-spacing:4px;color:var(--gold);line-height:1;}
+.th-sub{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:4px;}
+.ntbox{background:var(--paper);border-radius:6px 6px 0 0;border:2px solid var(--ink);
+  box-shadow:0 8px 32px rgba(0,0,0,.4),4px 4px 0 var(--gold-dark);margin-bottom:26px;position:relative;overflow:hidden;}
+.ntbox::before{content:'';position:absolute;inset:0;
+  background-image:repeating-linear-gradient(transparent,transparent 29px,rgba(200,184,154,.3) 29px,rgba(200,184,154,.3) 30px);
+  background-position:0 44px;pointer-events:none;}
+.nthole-wrap{position:absolute;left:0;top:0;bottom:0;width:58px;
+  display:flex;flex-direction:column;justify-content:space-evenly;align-items:center;padding:36px 0;}
+.nthole{width:13px;height:13px;border-radius:50%;background:#1c1c1c;box-shadow:inset 0 2px 4px rgba(0,0,0,.9);margin:9px 0;}
+.ntinner{padding:18px 20px 18px 68px;position:relative;z-index:1;}
+.ntdate{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--ink);opacity:.4;text-transform:uppercase;margin-bottom:7px;display:block;}
+.moodrow{display:flex;gap:7px;margin-bottom:11px;}
+.mbtn{padding:5px 12px;border:2px solid var(--ink);border-radius:99px;font-family:'Caveat',cursive;
+  font-size:15px;cursor:pointer;background:transparent;transition:all .15s;user-select:none;}
+.mbtn.sel{background:var(--ink);color:var(--gold);}
+.tti{width:100%;background:transparent;border:none;border-bottom:2px solid rgba(26,26,46,.18);
+  padding:7px 0;font-family:'Permanent Marker',cursive;font-size:20px;color:var(--ink);outline:none;margin-bottom:10px;}
+.tti::placeholder{color:rgba(26,26,46,.22);}
+.tbi{width:100%;background:transparent;border:none;padding:4px 0;font-family:'Caveat',cursive;
+  font-size:17px;color:var(--ink);outline:none;min-height:110px;resize:none;line-height:1.8;}
+.tbi::placeholder{color:rgba(26,26,46,.18);}
+.tagsrow{display:flex;gap:7px;margin-top:10px;flex-wrap:wrap;}
+.tbtn{padding:4px 12px;border:1.5px solid rgba(26,26,46,.18);border-radius:99px;
+  font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1px;
+  cursor:pointer;background:transparent;color:rgba(26,26,46,.45);transition:all .15s;}
+.tbtn.sel{background:var(--ink);color:var(--gold);border-color:var(--ink);}
+.ntfoot{display:flex;justify-content:space-between;align-items:center;
+  padding:11px 20px 11px 68px;border-top:1.5px solid rgba(26,26,46,.1);
+  background:var(--paper-dark);position:relative;z-index:1;}
+.tsave{padding:9px 22px;background:var(--ink);color:var(--gold);border:2px solid var(--gold);
+  border-radius:4px;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;
+  cursor:pointer;box-shadow:2px 2px 0 var(--gold-dark);transition:all .15s;}
+.tsave:active{transform:translate(1px,1px);box-shadow:1px 1px 0 var(--gold-dark);}
+.tcc{font-family:'Space Mono',monospace;font-size:10px;color:rgba(26,26,46,.3);}
+.tlist{display:flex;flex-direction:column;gap:14px;}
+.te{background:var(--paper);border-radius:4px;border:2px solid var(--ink);
+  box-shadow:3px 3px 0 rgba(26,26,46,.12);overflow:hidden;position:relative;}
+.te::before{content:'';position:absolute;inset:0;
+  background-image:repeating-linear-gradient(transparent,transparent 29px,rgba(200,184,154,.28) 29px,rgba(200,184,154,.28) 30px);
+  background-position:0 42px;pointer-events:none;}
+.tei{padding:14px 18px 14px 68px;position:relative;z-index:1;}
+.teh-wrap{position:absolute;left:0;top:0;bottom:0;width:58px;
+  display:flex;flex-direction:column;justify-content:space-evenly;align-items:center;padding:28px 0;}
+.teh-hole{width:11px;height:11px;border-radius:50%;background:#1c1c1c;box-shadow:inset 0 2px 4px rgba(0,0,0,.9);margin:7px 0;}
+.te-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:7px;gap:10px;}
+.te-mood{font-size:19px;}
+.te-meta{display:flex;flex-direction:column;flex:1;}
+.te-title{font-family:'Permanent Marker',cursive;font-size:17px;color:var(--ink);line-height:1.2;}
+.te-date{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1px;color:var(--ink);opacity:.32;margin-top:2px;}
+.te-del{background:none;border:none;cursor:pointer;color:rgba(26,26,46,.2);font-size:17px;padding:0 3px;transition:color .15s;flex-shrink:0;}
+.te-del:hover{color:var(--stab);}
+.te-body{font-family:'Caveat',cursive;font-size:15px;color:var(--ink);line-height:1.6;opacity:.72;margin-bottom:8px;}
+.te-tags{display:flex;gap:5px;flex-wrap:wrap;}
+.te-tag{padding:3px 9px;border:1px solid rgba(26,26,46,.13);border-radius:99px;
+  font-family:'Space Mono',monospace;font-size:7px;letter-spacing:1px;color:rgba(26,26,46,.38);background:var(--paper-dark);}
+.t-empty{text-align:center;padding:50px 20px;}
+.t-ei{font-size:44px;display:block;margin-bottom:14px;opacity:.28;}
+.t-et{font-family:'Permanent Marker',cursive;font-size:19px;color:rgba(255,255,255,.28);}
+.t-es{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.18);margin-top:7px;text-transform:uppercase;}
+
+/* ── SAVE + TOAST ── */
+.save-btn{position:fixed;bottom:22px;right:18px;z-index:100;background:var(--ink);color:var(--gold);
+  border:2px solid var(--gold);border-radius:999px;padding:11px 20px;font-family:'Space Mono',monospace;
+  font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;
+  box-shadow:0 8px 32px rgba(0,0,0,.5),3px 3px 0 var(--gold-dark);
+  transition:all .15s;display:none;align-items:center;gap:7px;}
+.save-btn.vis{display:flex;}
+.save-btn:active{transform:scale(.96);}
+.save-btn.saving{opacity:.5;pointer-events:none;}
+.save-btn.saved{background:var(--cash);border-color:var(--cash);color:#fff;}
+.toast{position:fixed;bottom:78px;left:50%;transform:translateX(-50%);
+  background:var(--ink);color:var(--gold);border:1px solid rgba(233,196,106,.3);
+  padding:9px 18px;border-radius:999px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;
+  opacity:0;transition:opacity .3s;pointer-events:none;z-index:200;white-space:nowrap;}
+.toast.show{opacity:1;}
+
+@media(max-width:700px){
+  .pc,.nsect{padding-left:76px;padding-right:12px;}
+  .pband{padding-left:76px;padding-right:12px;}
+  .ptabs{padding:0 76px;} .ptabs{padding:0 20px;}
+  .g3,.g2,.g31{grid-template-columns:1fr;}
+  .wgrid{grid-template-columns:repeat(4,1fr);}
+  .mscg{grid-template-columns:1fr 1fr 1fr;}
+  .btitle{font-size:22px;} .spiral{padding:0 18px;}
+  .ptab{padding:5px 9px;font-size:7px;}
+  .nbtn{padding:12px 9px;font-size:7px;letter-spacing:1px;}
+}
+</style>
+</head>
+<body>
+
+<div id="authScreen">
+  <div class="ab ab1"></div><div class="ab ab2"></div>
+
+  <div class="splash" id="splashView">
+    <div class="s-logo dyn-brand">Journify</div>
+    <div class="s-sub">Journal System</div>
+    <div class="s-book">
+      <div class="s-book-body">
+        <div class="s-book-spiral">
+          <div class="s-ring"></div><div class="s-ring"></div><div class="s-ring"></div>
+          <div class="s-ring"></div><div class="s-ring"></div>
+        </div>
+        <div class="s-book-line"></div><div class="s-book-line" style="width:45%"></div>
+        <div class="s-book-line" style="width:70%"></div><div class="s-book-line" style="width:35%"></div>
+        <div class="s-book-line"></div>
+      </div>
+    </div>
+    <div class="s-tagline">Track every day.<br>Build <span class="dyn-brand">Journify</span>.<br>Build Freedom.</div>
+    <div class="s-actions">
+      <button class="btn-start" onclick="showForm('signup')">✍️ START JOURNALING</button>
+      <div class="btn-login-link" onclick="showForm('login')">Already have an account? <span>Sign in</span></div>
+    </div>
+  </div>
+
+  <div class="fview" id="loginView">
+    <div class="fback" onclick="showSplash()">← Back</div>
+    <div class="ftitle">SIGN IN</div>
+    <div class="fsub">Welcome back, User</div>
+    <div class="ferr" id="loginErr"></div>
+    <div class="ffield"><label class="flabel">Email</label><input class="finput" id="loginEmail" type="email" placeholder="your@email.com" autocomplete="email"></div>
+    <div class="ffield"><label class="flabel">Password</label><input class="finput" id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password"></div>
+    <button class="fbtn" id="loginBtn" onclick="doLogin()">LOG IN</button>
+    <div class="fswitch" onclick="showForm('signup')">No account? <span>Create one</span></div>
+  </div>
+
+  <div class="fview" id="signupView">
+    <div class="fback" onclick="showSplash()">← Back</div>
+    <div class="ftitle">CREATE</div>
+    <div class="fsub">Build your journal account</div>
+    <div class="ferr" id="signupErr"></div>
+    <div class="ffield"><label class="flabel">Your Name</label><input class="finput" id="signupName" type="text" placeholder="Fighter" autocomplete="name"></div>
+    <div class="ffield"><label class="flabel">Email</label><input class="finput" id="signupEmail" type="email" placeholder="your@email.com" autocomplete="email"></div>
+    <div class="ffield"><label class="flabel">Password (min 6 chars)</label><input class="finput" id="signupPass" type="password" placeholder="••••••••" autocomplete="new-password"></div>
+    <button class="fbtn" id="signupBtn" onclick="doSignup()">CREATE ACCOUNT</button>
+    <div class="fswitch" onclick="showForm('login')">Have an account? <span>Sign in</span></div>
+  </div>
+
+  <div class="fview" id="onboardView">
+    <div class="ftitle">WELCOME</div>
+    <div class="fsub">Customize your journal</div>
+    <div class="ferr" id="onboardErr"></div>
+    <div class="ffield"><label class="flabel">Journal / Brand Name</label><input class="finput" id="obBrand" type="text" placeholder="Journify"></div>
+    <div class="ffield"><label class="flabel">Currency Symbol</label><input class="finput" id="obCurr" type="text" placeholder="$"></div>
+    <div class="ffield"><label class="flabel">Pillar 1 (e.g. Health)</label><input class="finput" id="obP1" type="text" placeholder="Pillar 1"></div>
+    <div class="ffield"><label class="flabel">Pillar 2 (e.g. Wealth)</label><input class="finput" id="obP2" type="text" placeholder="Pillar 2"></div>
+    <div class="ffield"><label class="flabel">Pillar 3 (e.g. Mindset)</label><input class="finput" id="obP3" type="text" placeholder="Pillar 3"></div>
+    <button class="fbtn" id="onboardBtn" onclick="saveOnboard()">LET'S GO</button>
+  </div>
+</div>
+
+<div id="appShell">
+  <div class="app-nav">
+    <div class="nav-left">
+      <div class="nbtn active" onclick="switchView('journal',this)">📔 JOURNAL</div>
+      <div class="nbtn" onclick="switchView('thoughts',this)">💭 THOUGHTS</div>
+    </div>
+    <div class="nav-right">
+      <div class="nav-user" id="navUser"></div>
+      <div class="nav-so" onclick="doSignout()">Sign out</div>
+    </div>
+  </div>
+
+  <div class="vw active" id="vw-journal">
+  <div class="nbwrap"><div class="nb">
+    <div class="spiral">
+      <div class="sring"></div><div class="sring"></div><div class="sring"></div><div class="sring"></div>
+      <div class="sring"></div><div class="sring"></div><div class="sring"></div><div class="sring"></div>
+      <div class="sring"></div><div class="sring"></div><div class="sring"></div><div class="sring"></div>
+    </div>
+    <div class="ptabs">
+      <div class="ptab active" onclick="switchPTab('daily',this)">DAILY</div>
+      <div class="ptab" onclick="switchPTab('weekly',this)">WEEKLY</div>
+      <div class="ptab" onclick="switchPTab('monthly',this)">MONTHLY</div>
+    </div>
+
+    <div class="page psec active" id="pt-daily">
+      <div class="holes"><div class="hole"></div><div class="hole"></div><div class="hole"></div><div class="hole"></div><div class="hole"></div></div>
+      <div class="pband"><div><div class="btitle">☀️ <span class="dyn-brand">Journify</span> — DAILY JOURNAL</div><div class="bsub">Morning Plan · Start Strong · Command The Day</div></div><div class="bdate" id="dDate"></div></div>
+      <div class="pc">
+        <div class="g31" style="margin-bottom:18px;align-items:start">
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div class="box" style="padding:12px 16px">
+              <div class="g2" style="gap:10px">
+                <div><div class="bt" style="font-size:13px">⏰ Wake Up Time</div><input class="fi" type="text" placeholder="06:30" data-k="d_wake"></div>
+                <div><div class="bt" style="font-size:13px">📵 No Phone Until</div><div style="font-family:'Caveat',cursive;font-size:13px;color:var(--ink);opacity:.5;padding-top:5px">Morning plan done ✓</div></div>
+              </div>
+            </div>
+            <div class="box cp" style="padding:12px 16px">
+              <div class="bt" style="margin-bottom:7px">🔱 Today's Pillars</div>
+              <div style="display:flex;gap:7px;flex-wrap:wrap">
+                <div class="pbadge c">💰 <span class="dyn-p1">Pillar 1</span></div><div class="pbadge v">👁️ <span class="dyn-p2">Pillar 2</span></div><div class="pbadge s">❤️ <span class="dyn-p3">Pillar 3</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="box dk" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:105px;gap:5px">
+            <div style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;color:rgba(255,255,255,.35);text-transform:uppercase">Today's Target</div>
+            <input class="fi" type="text" placeholder="0" data-k="d_goal" style="font-family:'Bebas Neue',sans-serif;font-size:34px;color:var(--gold);text-align:center;border-bottom-color:rgba(255,255,255,.1);width:90%">
+            <div class="dyn-curr" style="font-family:'Space Mono',monospace;font-size:9px;color:rgba(255,255,255,.28);letter-spacing:1px"></div>
+          </div>
+        </div>
+        <div class="g3" style="margin-bottom:18px">
+          <div class="box">
+            <div class="bt">🎯 Top 5 Actions</div>
+            <span class="fl">1.</span><input class="fi" type="text" placeholder="Action..." data-k="d_c1">
+            <span class="fl">2.</span><input class="fi" type="text" placeholder="Action..." data-k="d_c2">
+            <span class="fl">3.</span><input class="fi" type="text" placeholder="Action..." data-k="d_c3">
+            <span class="fl">4.</span><input class="fi" type="text" placeholder="Action..." data-k="d_c4">
+            <span class="fl">5.</span><input class="fi" type="text" placeholder="Action..." data-k="d_c5">
+          </div>
+          <div class="box vp">
+            <div class="bt">📸 Focus Plan</div>
+            <span class="fl">Focus Area 1</span><input class="fi" type="text" placeholder="Plan..." data-k="d_phones">
+            <span class="fl">Focus Area 2</span><input class="fi" type="text" placeholder="Plan..." data-k="d_laptops">
+            <span class="fl">Creative Idea</span><input class="fi" type="text" placeholder="Idea..." data-k="d_story">
+            <ul class="cl" style="margin-top:7px">
+              <li onclick="chk(this,'d_cc1')"><div class="ck" id="d_cc1"></div>Publish Content</li>
+              <li onclick="chk(this,'d_cc2')"><div class="ck" id="d_cc2"></div>Engage with Network</li>
+              <li onclick="chk(this,'d_cc3')"><div class="ck" id="d_cc3"></div>Deep Work Session</li>
+            </ul>
+          </div>
+          <div class="box">
+            <div class="bt">⏱️ Time Blocks</div>
+            <div class="sched">
+              <div class="si ss"><span class="st">07:00–07:20</span><span class="sd"></span><span class="sl">Wake · Water · No phone</span><span class="sg">MORN</span></div>
+              <div class="si sc"><span class="st">07:20–08:00</span><span class="sd"></span><span class="sl">Morning Journal Plan</span><span class="sg">CMD</span></div>
+              <div class="si sc"><span class="st">08:15–10:00</span><span class="sd"></span><span class="sl">Focus Block 1</span><span class="sg">WORK</span></div>
+              <div class="si sv"><span class="st">10:00–10:45</span><span class="sd"></span><span class="sl">Focus Block 2</span><span class="sg">WORK</span></div>
+              <div class="si sbr"><span class="st">11:00–11:30</span><span class="sd"></span><span class="sl">Real Break — Eat, walk</span><span class="sg">BREAK</span></div>
+              <div class="si sc"><span class="st">11:30–12:30</span><span class="sd"></span><span class="sl">Focus Block 3</span><span class="sg">WORK</span></div>
+              <div class="si sbr"><span class="st">13:00–14:30</span><span class="sd"></span><span class="sl">Rest / Personal time</span><span class="sg">REST</span></div>
+              <div class="si sc"><span class="st">15:00–16:00</span><span class="sd"></span><span class="sl">Admin & Wrap Up</span><span class="sg">ADMIN</span></div>
+              <div class="si sv"><span class="st">16:30–16:50</span><span class="sd"></span><span class="sl">Review Next Day</span><span class="sg">PREP</span></div>
+              <div class="si sni"><span class="st">21:00–21:30</span><span class="sd"></span><span class="sl">Night Journal — Reflect</span><span class="sg">REVIEW</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="g3">
+          <div class="box">
+            <div class="bt">✅ 5 Must-Do Non-Negotiables</div>
+            <div class="nnrow">
+              <div class="nni" onclick="nnck(this,'d_nn1')"><div class="nck" id="d_nn1"></div>Core Habit 1</div>
+              <div class="nni" onclick="nnck(this,'d_nn2')"><div class="nck" id="d_nn2"></div>Core Habit 2</div>
+              <div class="nni" onclick="nnck(this,'d_nn3')"><div class="nck" id="d_nn3"></div>Core Habit 3</div>
+              <div class="nni" onclick="nnck(this,'d_nn4')"><div class="nck" id="d_nn4"></div>Core Habit 4</div>
+              <div class="nni" onclick="nnck(this,'d_nn5')"><div class="nck" id="d_nn5"></div>Core Habit 5</div>
+            </div>
+          </div>
+          <div class="ibox" style="align-self:start">
+            <span class="il">INTENTION FOR TODAY</span>
+            <textarea class="fi" rows="4" placeholder="Write your intention here..." data-k="d_intention"></textarea>
+            <div style="margin-top:7px;font-family:'Permanent Marker',cursive;font-size:11px;color:var(--ink);opacity:.32;text-align:right">— User</div>
+          </div>
+          <div class="box sp">
+            <div class="bt">🛡️ Energy Protection</div>
+            <div class="erow">
+              <div class="ei"><div class="ed" style="background:var(--cash)"></div>Water before opening apps</div>
+              <div class="ei"><div class="ed" style="background:var(--vis)"></div>Real breaks (not scroll)</div>
+              <div class="ei"><div class="ed" style="background:var(--stab)"></div>Limit digital distractions</div>
+              <div class="ei"><div class="ed" style="background:var(--gold-dark)"></div>Sleep by 22:30 — 8 hrs</div>
+              <div class="ei"><div class="ed" style="background:#888"></div>Protect personal time</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="nsect">
+        <div class="sh-n">🌙 Night Review <span class="chip">END &amp; REFLECT</span></div>
+        <div class="g3" style="margin-bottom:16px">
+          <div class="box dk" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:95px;gap:5px">
+            <div style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;color:rgba(255,255,255,.32);text-transform:uppercase">Today's Result</div>
+            <input class="fi" type="text" placeholder="0" data-k="d_result" style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--gold);text-align:center;border-bottom-color:rgba(255,255,255,.1);width:80%">
+            <div class="dyn-curr" style="font-family:'Space Mono',monospace;font-size:8px;color:rgba(255,255,255,.18);letter-spacing:1px"></div>
+          </div>
+          <div class="box nk">
+            <div class="bt w" style="font-size:13px">😴 Sleep Time</div><input class="fi w" type="text" placeholder="22:30" data-k="d_sleep">
+            <div class="bt w" style="font-size:13px;margin-top:10px">🙏 Grateful For</div><input class="fi w" type="text" placeholder="..." data-k="d_grateful">
+          </div>
+          <div class="box nk">
+            <div class="bt w" style="font-size:13px">✅ Did I Complete 5 Must-Dos?</div>
+            <ul class="cl nk">
+              <li onclick="chk(this,'d_nc1')"><div class="ck nc" id="d_nc1"></div>Core Habit 1</li>
+              <li onclick="chk(this,'d_nc2')"><div class="ck nc" id="d_nc2"></div>Core Habit 2</li>
+              <li onclick="chk(this,'d_nc3')"><div class="ck nc" id="d_nc3"></div>Core Habit 3</li>
+              <li onclick="chk(this,'d_nc4')"><div class="ck nc" id="d_nc4"></div>Core Habit 4</li>
+              <li onclick="chk(this,'d_nc5')"><div class="ck nc" id="d_nc5"></div>Core Habit 5</li>
+            </ul>
+          </div>
+        </div>
+        <div class="g3" style="margin-bottom:16px">
+          <div class="box nk"><div class="bt w" style="font-size:13px">⚡ What Happened Today?</div><textarea class="fi w" rows="4" placeholder="What happened..." data-k="d_happened"></textarea></div>
+          <div class="box nk">
+            <div class="bt w" style="font-size:13px">💡 What Did I Learn?</div><textarea class="fi w" rows="3" placeholder="Key lessons..." data-k="d_learned"></textarea>
+            <div class="bt w" style="font-size:13px;margin-top:10px">🔧 Improvements</div><textarea class="fi w" rows="2" placeholder="Improvements..." data-k="d_improve"></textarea>
+          </div>
+          <div class="box nk">
+            <div class="bt w" style="font-size:13px">🏆 Extra Wins</div><textarea class="fi w" rows="3" placeholder="Bonus wins..." data-k="d_wins"></textarea>
+            <div class="bt w" style="font-size:13px;margin-top:10px">🎯 Tomorrow's Top 3</div>
+            <input class="fi w" type="text" placeholder="1." data-k="d_t1">
+            <input class="fi w" type="text" placeholder="2." data-k="d_t2">
+            <input class="fi w" type="text" placeholder="3." data-k="d_t3">
+          </div>
+        </div>
+        <div style="border-top:1px solid rgba(255,255,255,.08);padding-top:12px;text-align:center">
+          <div style="font-family:'Permanent Marker',cursive;font-size:12px;color:rgba(255,255,255,.18)">Small actions every day = Big results. Keep building <span class="dyn-brand">Journify</span>. 💜</div>
+        </div>
+      </div>
+      <div class="pnum">005</div>
+    </div>
+
+    <div class="page psec" id="pt-weekly">
+      <div class="holes"><div class="hole"></div><div class="hole"></div><div class="hole"></div><div class="hole"></div><div class="hole"></div></div>
+      <div class="pband"><div><div class="btitle">📅 <span class="dyn-brand">Journify</span> — WEEKLY JOURNAL</div><div class="bsub">Silence. Discipline. Focus.</div></div><div class="bdate" id="wDate"></div></div>
+      <div class="pc">
+        <div class="g3" style="margin-bottom:18px;align-items:start">
+          <div class="box dk" style="text-align:center;padding:18px 12px">
+            <div style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;color:rgba(255,255,255,.28);text-transform:uppercase;margin-bottom:5px">Weekly Goal</div>
+            <input class="fi" type="text" placeholder="0" data-k="w_main_goal" style="font-family:'Bebas Neue',sans-serif;font-size:46px;color:var(--gold);line-height:1;text-align:center;border-bottom-color:rgba(255,255,255,.1);width:90%">
+            <div class="dyn-curr" style="font-family:'Space Mono',monospace;font-size:9px;color:rgba(255,255,255,.22);letter-spacing:1px;margin-bottom:10px"></div>
+            <div style="border-top:1px solid rgba(255,255,255,.08);padding-top:9px">
+              <div style="font-family:'Space Mono',monospace;font-size:7px;letter-spacing:2px;color:rgba(255,255,255,.22);margin-bottom:2px">STRETCH</div>
+              <input class="fi" type="text" placeholder="0" data-k="w_stretch_goal" style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:rgba(233,196,106,.32);text-align:center;border-bottom-color:rgba(255,255,255,.1);width:90%">
+            </div>
+          </div>
+          <div class="box gp">
+            <div class="bt" style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px">🔱 Pillar of the Week</div>
+            <div style="font-family:'Permanent Marker',cursive;font-size:18px;color:var(--ink);margin:5px 0">RELENTLESS EXECUTION</div>
+            <div style="border-top:1px solid rgba(26,26,46,.14);padding-top:9px">
+              <span class="fl">Weekly Intention</span><textarea class="fi" rows="3" placeholder="This week I will..." data-k="w_intention"></textarea>
+            </div>
+          </div>
+          <div class="box sp">
+            <div class="bt">💀 Silent Killings</div>
+            <div class="skrow">
+              <div class="ski"><span class="skx">✗</span>Binge scrolling</div>
+              <div class="ski"><span class="skx">✗</span>Distraction rabbit holes</div>
+              <div class="ski"><span class="skx">✗</span>Checking stats without acting</div>
+              <div class="ski"><span class="skx">✗</span>Overthinking instead of doing</div>
+              <div class="ski"><span class="skx">✗</span>Skipping sleep</div>
+            </div>
+          </div>
+        </div>
+        <div class="sh">Weekly Schedule <span class="chip">THEME EACH DAY</span></div>
+        <div class="wgrid" style="margin-bottom:18px">
+          <div class="wd sp2"><div class="wdn">MON</div><span class="wdi">🎯</span><div class="wdt">Outreach</div></div>
+          <div class="wd"><div class="wdn">TUE</div><span class="wdi">👁️</span><div class="wdt">Content</div></div>
+          <div class="wd sp2"><div class="wdn">WED</div><span class="wdi">🤝</span><div class="wdt">Follow Up</div></div>
+          <div class="wd"><div class="wdn">THU</div><span class="wdi">💎</span><div class="wdt">Value</div></div>
+          <div class="wd sp2"><div class="wdn">FRI</div><span class="wdi">💰</span><div class="wdt">Deliver</div></div>
+          <div class="wd"><div class="wdn">SAT</div><span class="wdi">📚</span><div class="wdt">Grow</div></div>
+          <div class="wd rst"><div class="wdn">SUN</div><span class="wdi">🌿</span><div class="wdt">Rest</div></div>
+        </div>
+        <div class="g2" style="margin-bottom:18px">
+          <div class="box">
+            <div class="bt">📊 Weekly Numbers</div>
+            <table class="stbl">
+              <thead><tr><th>PILLAR</th><th>RESULT</th></tr></thead>
+              <tbody>
+                <tr class="rc"><td>💰 <span class="dyn-p1">Pillar 1</span></td><td><input type="text" placeholder="___" data-k="w_cash"></td></tr>
+                <tr class="rc"><td>🎯 Metric 2</td><td><input type="text" placeholder="___" data-k="w_outreach"></td></tr>
+                <tr class="rc"><td>🔥 Metric 3</td><td><input type="text" placeholder="___" data-k="w_replies"></td></tr>
+                <tr class="rv"><td>👁️ <span class="dyn-p2">Pillar 2</span></td><td><input type="text" placeholder="___" data-k="w_posts"></td></tr>
+                <tr class="rv"><td>📺 Metric 5</td><td><input type="text" placeholder="___" data-k="w_lives"></td></tr>
+                <tr class="rs"><td>😴 Sleep 8+hrs</td><td><input type="text" placeholder="_/7" data-k="w_sleep"></td></tr>
+                <tr class="rs"><td>📔 <span class="dyn-p3">Pillar 3</span></td><td><input type="text" placeholder="_/7" data-k="w_journal"></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div class="box">
+              <div class="bt">⚡ Weekly Non-Negotiables</div>
+              <div class="nnrow">
+                <div class="nni" onclick="nnck(this,'w_nn1')"><div class="nck" id="w_nn1"></div>Complete Core Habit 1</div>
+                <div class="nni" onclick="nnck(this,'w_nn2')"><div class="nck" id="w_nn2"></div>Complete Core Habit 2</div>
+                <div class="nni" onclick="nnck(this,'w_nn3')"><div class="nck" id="w_nn3"></div>Complete Core Habit 3</div>
+                <div class="nni" onclick="nnck(this,'w_nn4')"><div class="nck" id="w_nn4"></div>Complete Core Habit 4</div>
+                <div class="nni" onclick="nnck(this,'w_nn5')"><div class="nck" id="w_nn5"></div>Complete Core Habit 5</div>
+              </div>
+            </div>
+            <div class="box vp">
+              <div class="bt">🎨 Core Focus Mix</div>
+              <div class="cmix"><span class="cc">💡 Value</span><span class="cc">📦 Output</span><span class="cc">🎬 Process</span><span class="cc">⭐ Results</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="nsect">
+        <div class="sh-n">⭐ Weekly Review <span class="chip">FILL SUNDAY NIGHT</span></div>
+        <div class="g3" style="margin-bottom:14px">
+          <div class="box nk">
+            <div class="bt w" style="font-size:13px">💰 Results This Week</div>
+            <span class="fl w">Primary Metric</span><input class="fi w" type="text" placeholder="Amount" data-k="w_r_money">
+            <span class="fl w">Secondary Metric</span><input class="fi w" type="text" placeholder="Count" data-k="w_r_sales">
+            <span class="fl w">Output 1</span><input class="fi w" type="text" placeholder="Count" data-k="w_r_leads">
+            <span class="fl w">Output 2</span><input class="fi w" type="text" placeholder="Count" data-k="w_r_content">
+          </div>
+          <div class="box nk">
+            <div class="bt w" style="font-size:13px">✅ What Worked?</div><textarea class="fi w" rows="3" placeholder="What worked..." data-k="w_r_worked"></textarea>
+            <div class="bt w" style="font-size:13px;margin-top:9px">❌ What Didn't?</div><textarea class="fi w" rows="3" placeholder="What didn't work..." data-k="w_r_didnt"></textarea>
+          </div>
+          <div class="box nk">
+            <div class="bt w" style="font-size:13px">💡 Biggest Lesson</div><textarea class="fi w" rows="3" placeholder="Key lesson..." data-k="w_r_lesson"></textarea>
+            <div class="bt w" style="font-size:13px;margin-top:9px">🎯 Next Week Focus</div>
+            <input class="fi w" type="text" placeholder="1." data-k="w_r_n1">
+            <input class="fi w" type="text" placeholder="2." data-k="w_r_n2">
+            <input class="fi w" type="text" placeholder="3." data-k="w_r_n3">
+          </div>
+        </div>
+        <div style="padding:12px 16px;background:rgba(233,196,106,.08);border-radius:6px;border:1px solid rgba(233,196,106,.2);text-align:center">
+          <div style="font-family:'Permanent Marker',cursive;font-size:16px;color:var(--gold);margin-bottom:3px">The Weekly Question:</div>
+          <div style="font-family:'Caveat',cursive;font-size:17px;color:rgba(255,255,255,.6)">"Am I on track for my monthly goal? What's the one thing I must fix next week?"</div>
+        </div>
+      </div>
+      <div class="pnum">006</div>
+    </div>
+
+    <div class="page psec" id="pt-monthly">
+      <div class="holes"><div class="hole"></div><div class="hole"></div><div class="hole"></div><div class="hole"></div><div class="hole"></div></div>
+      <div class="pband"><div><div class="btitle">🏆 <span class="dyn-brand">Journify</span> — MONTHLY JOURNAL</div><div class="bsub">One Day or Day One.</div></div><div class="bdate" id="mDate"></div></div>
+      <div class="pc">
+        <div class="g3" style="margin-bottom:18px;align-items:start">
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <div class="box dk" style="text-align:center;padding:16px 12px">
+              <div style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;color:rgba(255,255,255,.28);text-transform:uppercase;margin-bottom:3px">Monthly Goal</div>
+              <input class="fi" type="text" placeholder="0" data-k="m_main_goal" style="font-family:'Bebas Neue',sans-serif;font-size:40px;color:var(--gold);line-height:1;text-align:center;border-bottom-color:rgba(255,255,255,.1);width:90%">
+              <div class="dyn-curr" style="font-family:'Space Mono',monospace;font-size:9px;color:rgba(255,255,255,.22)"></div>
+            </div>
+            <div class="box gp" style="text-align:center;padding:11px 12px">
+              <input class="fi" type="text" placeholder="0" data-k="m_stretch_goal" style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--ink);text-align:center;border-bottom-color:rgba(26,26,46,.1);width:90%">
+              <div style="font-family:'Space Mono',monospace;font-size:8px;opacity:.4;text-transform:uppercase">Stretch Goal</div>
+            </div>
+          </div>
+          <div class="box cp" style="border-color:var(--cash);box-shadow:3px 3px 0 var(--cash)">
+            <div class="bt" style="color:var(--cash)">💎 Pillar of the Month</div>
+            <div style="font-family:'Permanent Marker',cursive;font-size:20px;color:var(--ink);margin:5px 0">FOCUS &amp; EXECUTION</div>
+            <span class="fl">Monthly Theme</span><input class="fi" type="text" placeholder="Theme..." data-k="m_theme">
+            <span class="fl" style="margin-top:7px">This Month I Will Prove</span><input class="fi" type="text" placeholder="I will prove..." data-k="m_prove">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <div class="box sp">
+              <div class="bt">💀 Silent Killings</div>
+              <div class="skrow">
+                <div class="ski"><span class="skx">✗</span>No binge scrolling</div>
+                <div class="ski"><span class="skx">✗</span>No motivation without action</div>
+                <div class="ski"><span class="skx">✗</span>No skipping output "just today"</div>
+                <div class="ski"><span class="skx">✗</span>No sleeping without journaling</div>
+              </div>
+            </div>
+            <div style="background:var(--ink);border-radius:6px;padding:12px;text-align:center;border:2px solid var(--gold)">
+              <div style="font-family:'Permanent Marker',cursive;font-size:13px;color:var(--gold)">DISCIPLINE TODAY</div>
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#fff;letter-spacing:3px">FREEDOM TOMORROW</div>
+            </div>
+          </div>
+        </div>
+        <div class="sh">Monthly Pillar Tracking <span class="chip">TRACK AS YOU GO</span></div>
+        <div class="g3" style="margin-bottom:18px">
+          <div class="box cp">
+            <div class="bt" style="color:var(--cash)">💰 1. <span class="dyn-p1">Pillar 1</span></div>
+            <ul class="cl">
+              <li onclick="chk(this,'m_cc1')"><div class="ck" id="m_cc1"></div>Achieve primary metric</li>
+              <li onclick="chk(this,'m_cc2')"><div class="ck" id="m_cc2"></div>Hit monthly goal</li>
+              <li onclick="chk(this,'m_cc3')"><div class="ck" id="m_cc3"></div>Optimize conversions</li>
+              <li onclick="chk(this,'m_cc4')"><div class="ck" id="m_cc4"></div>Expand reach</li>
+            </ul>
+            <div style="margin-top:10px">
+              <span class="fl">Result 1</span><input class="fi" type="text" placeholder="Result" data-k="m_revenue">
+              <span class="fl">Result 2</span><input class="fi" type="text" placeholder="Result" data-k="m_sales">
+            </div>
+          </div>
+          <div class="box vp">
+            <div class="bt" style="color:var(--vis)">👁️ 2. <span class="dyn-p2">Pillar 2</span></div>
+            <ul class="cl">
+              <li onclick="chk(this,'m_vc1')"><div class="ck" id="m_vc1"></div>Consistent Output</li>
+              <li onclick="chk(this,'m_vc2')"><div class="ck" id="m_vc2"></div>Deliver high value</li>
+              <li onclick="chk(this,'m_vc3')"><div class="ck" id="m_vc3"></div>Engage audience</li>
+              <li onclick="chk(this,'m_vc4')"><div class="ck" id="m_vc4"></div>Follow through on tasks</li>
+            </ul>
+            <div style="margin-top:10px">
+              <span class="fl">Result 1</span><input class="fi" type="text" placeholder="Result" data-k="m_posts">
+              <span class="fl">Result 2</span><input class="fi" type="text" placeholder="Result" data-k="m_lives">
+            </div>
+          </div>
+          <div class="box sp">
+            <div class="bt" style="color:var(--stab)">❤️ 3. <span class="dyn-p3">Pillar 3</span></div>
+            <ul class="cl">
+              <li onclick="chk(this,'m_sc1')"><div class="ck" id="m_sc1"></div>8+ hours sleep every day</li>
+              <li onclick="chk(this,'m_sc2')"><div class="ck" id="m_sc2"></div>More breaks, don't burn out</li>
+              <li onclick="chk(this,'m_sc3')"><div class="ck" id="m_sc3"></div>Reduce screen time</li>
+              <li onclick="chk(this,'m_sc4')"><div class="ck" id="m_sc4"></div>Protect boundaries</li>
+            </ul>
+            <div style="margin-top:10px">
+              <span class="fl">Avg Sleep Hours</span><input class="fi" type="text" placeholder="hrs" data-k="m_sleep">
+              <span class="fl">Journal Completed</span><input class="fi" type="text" placeholder="_/30" data-k="m_journal">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="nsect">
+        <div class="sh-n">🏆 Monthly Recap <span class="chip">FILL LAST DAY</span></div>
+        <div class="g3" style="margin-bottom:16px">
+          <div class="box nk">
+            <div class="bt w" style="font-size:13px">📊 Results</div>
+            <span class="fl w">Primary Metric</span><input class="fi w" type="text" placeholder="Amount" data-k="m_r_revenue">
+            <span class="fl w">Goal hit?</span><input class="fi w" type="text" placeholder="Yes/No" data-k="m_r_goal">
+            <span class="fl w">Secondary Metric</span><input class="fi w" type="text" placeholder="Count" data-k="m_r_sales">
+            <span class="fl w">Output Total</span><input class="fi w" type="text" placeholder="Count" data-k="m_r_posts">
+          </div>
+          <div class="box nk">
+            <div class="bt w" style="font-size:13px">✅ What Worked?</div><textarea class="fi w" rows="3" placeholder="What worked..." data-k="m_r_worked"></textarea>
+            <div class="bt w" style="font-size:13px;margin-top:9px">❌ What Didn't?</div><textarea class="fi w" rows="3" placeholder="What didn't work..." data-k="m_r_didnt"></textarea>
+          </div>
+          <div class="box nk">
+            <div class="bt w" style="font-size:13px">💡 Biggest Lesson</div><textarea class="fi w" rows="3" placeholder="Biggest lesson..." data-k="m_r_lesson"></textarea>
+            <div class="bt w" style="font-size:13px;margin-top:9px">🎯 Next Month Focus</div>
+            <input class="fi w" type="text" placeholder="1." data-k="m_r_n1">
+            <input class="fi w" type="text" placeholder="2." data-k="m_r_n2">
+            <input class="fi w" type="text" placeholder="3." data-k="m_r_n3">
+          </div>
+        </div>
+        <div style="margin-bottom:14px">
+          <div style="font-family:'Permanent Marker',cursive;font-size:16px;color:var(--gold);margin-bottom:12px">Month Score</div>
+          <div class="mscg">
+            <div class="msc cp"><span class="msi">💰</span><div class="msl dyn-p1">Pillar 1</div><input type="text" placeholder="__" data-k="m_s_cash"> /10</div>
+            <div class="msc vp"><span class="msi">👁️</span><div class="msl dyn-p2">Pillar 2</div><input type="text" placeholder="__" data-k="m_s_vis"> /10</div>
+            <div class="msc sp"><span class="msi">❤️</span><div class="msl dyn-p3">Pillar 3</div><input type="text" placeholder="__" data-k="m_s_stab"> /10</div>
+          </div>
+        </div>
+        <div style="padding:12px 16px;background:rgba(233,196,106,.06);border-radius:6px;border:1px solid rgba(233,196,106,.14);text-align:center">
+          <div style="font-family:'Permanent Marker',cursive;font-size:14px;color:var(--gold);margin-bottom:3px">The Monthly Question:</div>
+          <div style="font-family:'Caveat',cursive;font-size:17px;color:rgba(255,255,255,.58)">"Did I move closer to freedom this month?"</div>
+        </div>
+        <div style="border-top:1px solid rgba(255,255,255,.07);margin-top:18px;padding-top:12px;text-align:center">
+          <div style="font-family:'Permanent Marker',cursive;font-size:11px;color:rgba(255,255,255,.14)">I BUILD <span class="dyn-brand" style="text-transform: uppercase;">Journify</span>. I BUILD FREEDOM. 👑</div>
+        </div>
+      </div>
+      <div class="pnum">007</div>
+    </div>
+
+  </div></div>
+  </div>
+
+  <div class="vw" id="vw-thoughts">
+  <div class="twrap">
+    <div class="th-hdr">
+      <div class="th-title">DAILY THOUGHTS</div>
+      <div class="th-sub">What I learned · What I felt · What I built</div>
+    </div>
+    <div class="ntbox">
+      <div class="nthole-wrap"><div class="nthole"></div><div class="nthole"></div><div class="nthole"></div><div class="nthole"></div></div>
+      <div class="ntinner">
+        <span class="ntdate" id="tDateLbl"></span>
+        <div class="moodrow">
+          <button class="mbtn" onclick="selMood(this,'🔥')">🔥</button>
+          <button class="mbtn" onclick="selMood(this,'💡')">💡</button>
+          <button class="mbtn" onclick="selMood(this,'😤')">😤</button>
+          <button class="mbtn" onclick="selMood(this,'🙏')">🙏</button>
+          <button class="mbtn" onclick="selMood(this,'💪')">💪</button>
+          <button class="mbtn" onclick="selMood(this,'🤔')">🤔</button>
+          <button class="mbtn" onclick="selMood(this,'🏆')">🏆</button>
+        </div>
+        <input class="tti" id="tTitle" type="text" placeholder="What's the headline of today...">
+        <textarea class="tbi" id="tBody" placeholder="Write freely. What did you learn? What happened? What are you thinking about? What do you want to remember?..." oninput="updCC()"></textarea>
+        <div class="tagsrow" id="tagsRow">
+          <button class="tbtn" onclick="togTag(this)">💰 <span class="dyn-p1">Pillar 1</span></button>
+          <button class="tbtn" onclick="togTag(this)">👁️ <span class="dyn-p2">Pillar 2</span></button>
+          <button class="tbtn" onclick="togTag(this)">❤️ <span class="dyn-p3">Pillar 3</span></button>
+          <button class="tbtn" onclick="togTag(this)">💡 Lesson</button>
+          <button class="tbtn" onclick="togTag(this)">🎯 Goal</button>
+          <button class="tbtn" onclick="togTag(this)">🏆 Win</button>
+          <button class="tbtn" onclick="togTag(this)">🔧 Improve</button>
+        </div>
+      </div>
+      <div class="ntfoot">
+        <span class="tcc" id="charCnt">0 chars</span>
+        <button class="tsave" onclick="saveThought()">✍️ ADD ENTRY</button>
+      </div>
+    </div>
+    <div id="thoughtsList"></div>
+  </div>
+  </div>
+</div>
+
+<button class="save-btn" id="saveBtn" onclick="saveJournal()"><span id="sIcon">💾</span> Save Journal</button>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══ SUPABASE ══ */
+const SB_URL = 'https://onpidovzcfyqgaqtymcy.supabase.co';
+const SB_KEY = 'sb_publishable_7Jxk9ML79D5w7BcTe1q29g_7_OW6NmC';
+const sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: false } });
+
+/* ══ STATE ══ */
+let currentUser = null, jData = {}, thoughts = [], selMoodVal = '✍️', autoST = null;
+let uSet = { brand: 'Journify', curr: '', p1: 'Pillar 1', p2: 'Pillar 2', p3: 'Pillar 3' };
+
+/* ══ AUTH UI ══ */
+function showSplash() {
+  document.getElementById('splashView').style.display = 'flex';
+  document.getElementById('loginView').classList.remove('active');
+  document.getElementById('signupView').classList.remove('active');
+  document.getElementById('onboardView').classList.remove('active');
+}
+function showForm(t) {
+  document.getElementById('splashView').style.display = 'none';
+  document.getElementById('loginView').classList.remove('active');
+  document.getElementById('signupView').classList.remove('active');
+  document.getElementById('onboardView').classList.remove('active');
+  document.getElementById(t + 'View').classList.add('active');
+}
+function setErr(id, msg) { const e = document.getElementById(id); e.textContent = msg; e.classList.add('show'); }
+function clrErr(id) { document.getElementById(id).classList.remove('show'); }
+
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  if (!email || !pass) { setErr('loginErr', 'Enter email and password.'); return; }
+  const btn = document.getElementById('loginBtn');
+  btn.textContent = 'Logging in...'; btn.disabled = true;
+  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+  btn.textContent = 'LOG IN'; btn.disabled = false;
+  if (error) { setErr('loginErr', error.message); return; }
+  clrErr('loginErr');
+}
+
+async function doSignup() {
+  const name = document.getElementById('signupName').value.trim();
+  const email = document.getElementById('signupEmail').value.trim();
+  const pass = document.getElementById('signupPass').value;
+  if (!name || !email || !pass) { setErr('signupErr', 'Fill in all fields.'); return; }
+  if (pass.length < 6) { setErr('signupErr', 'Password must be at least 6 characters.'); return; }
+  const btn = document.getElementById('signupBtn');
+  btn.textContent = 'Creating...'; btn.disabled = true;
+  const { data, error } = await sb.auth.signUp({ email, password: pass, options: { data: { full_name: name } } });
+  btn.textContent = 'CREATE ACCOUNT'; btn.disabled = false;
+  if (error) { setErr('signupErr', error.message); return; }
+  if (data.user && !data.session) { setErr('signupErr', 'Check your email to confirm your account, then log in.'); return; }
+  clrErr('signupErr');
+}
+
+async function doSignout() {
+  await sb.auth.signOut();
+  currentUser = null; jData = {}; thoughts = [];
+  document.getElementById('appShell').classList.remove('active');
+  document.getElementById('authScreen').style.display = 'flex';
+  document.getElementById('saveBtn').classList.remove('vis');
+  showSplash();
+}
+
+/* ══ ONBOARDING & SETTINGS ══ */
+async function saveOnboard() {
+  const btn = document.getElementById('onboardBtn');
+  btn.textContent = 'SAVING...'; btn.disabled = true;
+  
+  const payload = {
+    user_id: currentUser.id,
+    brand_name: document.getElementById('obBrand').value.trim() || 'Journify',
+    currency: document.getElementById('obCurr').value.trim() || '',
+    pillar_1: document.getElementById('obP1').value.trim() || 'Pillar 1',
+    pillar_2: document.getElementById('obP2').value.trim() || 'Pillar 2',
+    pillar_3: document.getElementById('obP3').value.trim() || 'Pillar 3',
+  };
+
+  const { error } = await sb.from('user_settings').upsert(payload);
+  btn.textContent = "LET'S GO"; btn.disabled = false;
+
+  if (error) { setErr('onboardErr', 'Failed to save settings. Please try again.'); return; }
+  
+  uSet = { brand: payload.brand_name, curr: payload.currency, p1: payload.pillar_1, p2: payload.pillar_2, p3: payload.pillar_3 };
+  clrErr('onboardErr');
+  await finishLogin();
+}
+
+function applyUI() {
+  document.querySelectorAll('.dyn-brand').forEach(el => el.textContent = uSet.brand);
+  document.querySelectorAll('.dyn-curr').forEach(el => el.textContent = uSet.curr);
+  document.querySelectorAll('.dyn-p1').forEach(el => el.textContent = uSet.p1);
+  document.querySelectorAll('.dyn-p2').forEach(el => el.textContent = uSet.p2);
+  document.querySelectorAll('.dyn-p3').forEach(el => el.textContent = uSet.p3);
+}
+
+/* ══ AUTH STATE ══ */
+sb.auth.onAuthStateChange(async (event, session) => {
+  if (event === 'SIGNED_IN' && session) {
+    currentUser = session.user;
+    const name = session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User';
+    document.getElementById('navUser').textContent = name;
+    
+    // Check if user has settings
+    try {
+      const { data: s } = await sb.from('user_settings').select('*').eq('user_id', currentUser.id).maybeSingle();
+      if (!s) {
+        document.getElementById('authScreen').style.display = 'flex';
+        showForm('onboard');
+      } else {
+        uSet = { brand: s.brand_name || 'Journify', curr: s.currency || '', p1: s.pillar_1 || 'Pillar 1', p2: s.pillar_2 || 'Pillar 2', p3: s.pillar_3 || 'Pillar 3' };
+        await finishLogin();
+      }
+    } catch (e) {
+      console.warn("Settings check failed", e);
+      await finishLogin();
+    }
+  } else if (event === 'SIGNED_OUT') { currentUser = null; }
+});
+
+async function finishLogin() {
+  applyUI();
+  await loadAll();
+  document.getElementById('authScreen').style.display = 'none';
+  document.getElementById('appShell').classList.add('active');
+  document.getElementById('saveBtn').classList.add('vis');
+  updDates(); populateJ(); renderThoughts(); updTDate();
+}
+
+/* ══ LOAD ALL ══ */
+async function loadAll() {
+  try {
+    const { data: j } = await sb.from('wdtech_journal').select('*').eq('user_id', currentUser.id);
+    if (j) j.forEach(r => { jData[r.entry_key] = r.entry_data; });
+    const { data: t } = await sb.from('wdtech_thoughts').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+    if (t) thoughts = t;
+  } catch(e) { console.warn('Load:', e); }
+}
+
+/* ══ DATES ══ */
+const MO = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DA = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+function dKey()  { return 'daily_'  + new Date().toISOString().slice(0,10); }
+function wKey()  { const d = new Date(), j = new Date(d.getFullYear(),0,1), w = Math.ceil(((d-j)/86400000+j.getDay()+1)/7); return 'weekly_' + d.getFullYear() + '_w' + w; }
+function mKey()  { return 'monthly_' + new Date().toISOString().slice(0,7); }
+function updDates() {
+  const n = new Date();
+  document.getElementById('dDate').textContent = DA[n.getDay()] + ', ' + n.getDate() + ' ' + MO[n.getMonth()] + ' ' + n.getFullYear();
+  document.getElementById('wDate').textContent = 'Week of ' + MO[n.getMonth()] + ' ' + n.getFullYear();
+  document.getElementById('mDate').textContent = MO[n.getMonth()] + ' ' + n.getFullYear();
+}
+function updTDate() {
+  const n = new Date();
+  document.getElementById('tDateLbl').textContent = DA[n.getDay()].toUpperCase() + ', ' + n.getDate() + ' ' + MO[n.getMonth()].toUpperCase() + ' ' + n.getFullYear();
+}
+
+/* ══ JOURNAL ══ */
+function populateJ() {
+  const all = { ...(jData[dKey()]||{}), ...(jData[wKey()]||{}), ...(jData[mKey()]||{}) };
+  document.querySelectorAll('[data-k]').forEach(el => { if (all[el.getAttribute('data-k')] !== undefined) el.value = all[el.getAttribute('data-k')]; });
+  Object.entries(all).forEach(([k,v]) => {
+    if (!k.endsWith('_ck') || !v) return;
+    const box = document.getElementById(k.replace('_ck',''));
+    if (!box) return;
+    box.classList.add('done');
+    const item = box.closest('.nni, li');
+    if (item) item.classList.add('done');
+  });
+}
+
+async function saveJournal() {
+  if (!currentUser) return;
+  const btn = document.getElementById('saveBtn'), icon = document.getElementById('sIcon');
+  btn.classList.add('saving'); icon.textContent = '⏳';
+  const d = {}, w = {}, m = {};
+  document.querySelectorAll('[data-k]').forEach(el => {
+    const k = el.getAttribute('data-k');
+    if (k.startsWith('d_')) d[k] = el.value;
+    else if (k.startsWith('w_')) w[k] = el.value;
+    else if (k.startsWith('m_')) m[k] = el.value;
+  });
+  document.querySelectorAll('.ck[id], .nck[id]').forEach(box => {
+    if (!box.id) return;
+    const k = box.id + '_ck', v = box.classList.contains('done');
+    if (box.id.startsWith('d_')) d[k] = v;
+    else if (box.id.startsWith('w_')) w[k] = v;
+    else if (box.id.startsWith('m_')) m[k] = v;
+  });
+  try {
+    await Promise.all([upsJ(dKey(),d), upsJ(wKey(),w), upsJ(mKey(),m)]);
+    toast('✓ Journal Saved');
+    btn.classList.remove('saving'); btn.classList.add('saved'); icon.textContent = '✓';
+    setTimeout(() => { btn.classList.remove('saved'); icon.textContent = '💾'; }, 2200);
+  } catch(e) { toast('⚠ Save failed'); btn.classList.remove('saving'); icon.textContent = '💾'; }
+}
+async function upsJ(key, data) {
+  const { error } = await sb.from('wdtech_journal').upsert(
+    { user_id: currentUser.id, entry_key: key, entry_data: data, updated_at: new Date().toISOString() },
+    { onConflict: 'user_id,entry_key' }
+  );
+  if (error) throw error;
+}
+
+/* ══ THOUGHTS ══ */
+function selMood(btn, mood) { selMoodVal = mood; document.querySelectorAll('.mbtn').forEach(b => b.classList.remove('sel')); btn.classList.add('sel'); }
+function togTag(btn) { btn.classList.toggle('sel'); }
+function updCC() { document.getElementById('charCnt').textContent = document.getElementById('tBody').value.length + ' chars'; }
+function getTags() { return Array.from(document.querySelectorAll('.tbtn.sel')).map(b => b.textContent.trim()); }
+
+async function saveThought() {
+  if (!currentUser) return;
+  const title = document.getElementById('tTitle').value.trim();
+  const body  = document.getElementById('tBody').value.trim();
+  if (!body && !title) { toast('Write something first'); return; }
+  const entry = { user_id: currentUser.id, title: title||'(untitled)', body, mood: selMoodVal, tags: getTags(), created_at: new Date().toISOString() };
+  const { data, error } = await sb.from('wdtech_thoughts').insert(entry).select().single();
+  if (error) { toast('⚠ Save failed'); console.error(error); return; }
+  thoughts.unshift(data); renderThoughts();
+  document.getElementById('tTitle').value = '';
+  document.getElementById('tBody').value = '';
+  document.querySelectorAll('.mbtn,.tbtn').forEach(b => b.classList.remove('sel'));
+  selMoodVal = '✍️'; updCC(); toast('✓ Entry Added');
+}
+
+async function delThought(id) {
+  if (!confirm('Delete this entry?')) return;
+  const { error } = await sb.from('wdtech_thoughts').delete().eq('id', id).eq('user_id', currentUser.id);
+  if (error) { toast('⚠ Delete failed'); return; }
+  thoughts = thoughts.filter(t => t.id !== id); renderThoughts(); toast('Deleted');
+}
+
+function renderThoughts() {
+  const c = document.getElementById('thoughtsList');
+  if (!thoughts.length) {
+    c.innerHTML = '<div class="t-empty"><span class="t-ei">📝</span><div class="t-et">No entries yet</div><div class="t-es">Write your first thought above</div></div>';
+    return;
+  }
+  c.innerHTML = '<div class="tlist">' + thoughts.map(t => {
+    const d = new Date(t.created_at);
+    const ds = DA[d.getDay()].slice(0,3) + ', ' + d.getDate() + ' ' + MO[d.getMonth()].slice(0,3) + ' ' + d.getFullYear();
+    const tags = (t.tags||[]).map(g => `<span class="te-tag">${g}</span>`).join('');
+    const prev = t.body ? (t.body.length > 180 ? t.body.slice(0,180) + '...' : t.body) : '';
+    return `<div class="te"><div class="teh-wrap"><div class="teh-hole"></div><div class="teh-hole"></div><div class="teh-hole"></div></div>
+      <div class="tei"><div class="te-hdr"><span class="te-mood">${t.mood||'✍️'}</span><div class="te-meta"><div class="te-title">${esc(t.title||'')}</div><div class="te-date">${ds}</div></div>
+      <button class="te-del" onclick="delThought('${t.id}')">×</button></div>
+      ${prev ? `<div class="te-body">${esc(prev)}</div>` : ''}${tags ? `<div class="te-tags">${tags}</div>` : ''}</div></div>`;
+  }).join('') + '</div>';
+}
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/* ══ UI ══ */
+function switchView(name, btn) {
+  document.querySelectorAll('.vw').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nbtn').forEach(b => b.classList.remove('active'));
+  document.getElementById('vw-'+name).classList.add('active'); btn.classList.add('active');
+  document.getElementById('saveBtn').classList[name==='journal'?'add':'remove']('vis');
+  window.scrollTo(0,0);
+}
+function switchPTab(name, btn) {
+  document.querySelectorAll('.psec').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.ptab').forEach(t => t.classList.remove('active'));
+  document.getElementById('pt-'+name).classList.add('active'); btn.classList.add('active');
+  window.scrollTo(0,0);
+}
+function chk(el, id) { el.classList.toggle('done'); const b = document.getElementById(id); if(b) b.classList.toggle('done'); }
+function nnck(el, id) { el.classList.toggle('done'); const b = document.getElementById(id); if(b) b.classList.toggle('done'); }
+document.addEventListener('input', e => { if(e.target.closest('#vw-journal')) { clearTimeout(autoST); autoST = setTimeout(saveJournal, 4000); } });
+function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500); }
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js').catch(() => {}));
+}
+</script>
+</body>
+</html>
